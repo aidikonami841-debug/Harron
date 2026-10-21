@@ -2,20 +2,26 @@
   "name": "financeapp",
   "version": "1.0.0",
   "private": true,
+  "main": "expo/AppEntry",
   "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "start": "expo start",
+    "web": "expo start --web",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@expo/metro-runtime": "~3.1.3",
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
+    "expo": "~50.0.21",
     "react": "18.2.0",
-    "react-native": "0.73.2",
+    "react-dom": "18.2.0",
+    "react-native": "0.73.6",
     "react-native-safe-area-context": "^4.8.2",
     "react-native-screens": "^3.29.0",
+    "react-native-web": "~0.19.6",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
@@ -25,6 +31,7 @@
     "@react-native/babel-preset": "0.73.18",
     "@react-native/metro-config": "0.73.2",
     "@tsconfig/react-native": "^3.0.9",
+    "@types/react": "~18.2.45",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "babel-jest": "^29.6.3",

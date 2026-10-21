@@ -1,25 +1,33 @@
 import { create } from 'zustand';
 
-export interface Wallet {
-  id: string;
-  name: string;
-  type: 'personal' | 'store';
-  balance: number;
-}
+export type AppMode = 'pribadi' | 'bisnis';
 
 interface WalletState {
-  wallets: Wallet[];
-  activeWalletId: string;
-  setActiveWallet: (id: string) => void;
-  addWallet: (wallet: Wallet) => void;
+  activeMode: AppMode;
+  setActiveMode: (mode: AppMode) => void;
+  
+  // Data Pribadi
+  saldoPribadi: number;
+  uangMasukPribadi: number;
+  uangKeluarPribadi: number;
+
+  // Data Bisnis
+  namaToko: string;
+  totalPendapatanBisnis: number;
+  omzetBisnis: number;
+  pengeluaranBisnis: number;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
-  wallets: [
-    { id: '1', name: 'Dompet Pribadi', type: 'personal', balance: 1500000 },
-    { id: '2', name: 'Kas Toko Utama', type: 'store', balance: 5000000 },
-  ],
-  activeWalletId: '1',
-  setActiveWallet: (id) => set({ activeWalletId: id }),
-  addWallet: (wallet) => set((state) => ({ wallets: [...state.wallets, wallet] })),
+  activeMode: 'pribadi',
+  setActiveMode: (mode) => set({ activeMode: mode }),
+
+  saldoPribadi: 12450000,
+  uangMasukPribadi: 15000000,
+  uangKeluarPribadi: 2550000,
+
+  namaToko: 'Toko Kelontong Berkah',
+  totalPendapatanBisnis: 45800000,
+  omzetBisnis: 60000000,
+  pengeluaranBisnis: 14200000,
 }));
