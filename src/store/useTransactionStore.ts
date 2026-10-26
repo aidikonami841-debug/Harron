@@ -1,9 +1,14 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { AppMode } from './useWalletStore';
+
+export type TransactionType = 'income' | 'expense';
 
 export interface Transaction {
   id: string;
-  walletId: string;
-  type: 'income' | 'expense';
+  mode: AppMode;
+  type: TransactionType;
   amount: number;
   category: string;
   note: string;
@@ -12,21 +17,20 @@ export interface Transaction {
 
 interface TransactionState {
   transactions: Transaction[];
-  addTransaction: (tx: Transaction) => void;
+  addTransaction: (transaction: Transaction) => void;
 }
 
-export const useTransactionStore = create<TransactionState>((set) => ({
-  transactions: [
+export const useTransactionStore = create<TransactionState>()(
+  persist(
+    (set) => ({
+      transactions: [],
+      addTransaction: (transaction) =>
+        set((state) => ({ transactions: [transaction, ...state.transactions] })),
+    }),
     {
-      id: '1',
-      walletId: '2',
-      type: 'income',
-      amount: 250000,
-      category: 'Penjualan Toko',
-      note: 'Terjual 5 pcs produk',
-      date: '2026-06-07',
+      name: 'financeapp-transactions',
+      storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
     },
-  ],
-  addTransaction: (tx) =>
-    set((state) => ({ transactions: [tx, ...state.transactions] })),
-}));
+  ),
+);

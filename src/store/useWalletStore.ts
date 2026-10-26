@@ -1,33 +1,29 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type AppMode = 'pribadi' | 'bisnis';
 
 interface WalletState {
-  activeMode: AppMode;
+  activeMode: AppMode | null;
+  hasHydrated: boolean;
   setActiveMode: (mode: AppMode) => void;
-  
-  // Data Pribadi
-  saldoPribadi: number;
-  uangMasukPribadi: number;
-  uangKeluarPribadi: number;
-
-  // Data Bisnis
-  namaToko: string;
-  totalPendapatanBisnis: number;
-  omzetBisnis: number;
-  pengeluaranBisnis: number;
+  setHasHydrated: (hydrated: boolean) => void;
 }
 
-export const useWalletStore = create<WalletState>((set) => ({
-  activeMode: 'pribadi',
-  setActiveMode: (mode) => set({ activeMode: mode }),
-
-  saldoPribadi: 12450000,
-  uangMasukPribadi: 15000000,
-  uangKeluarPribadi: 2550000,
-
-  namaToko: 'Toko Kelontong Berkah',
-  totalPendapatanBisnis: 45800000,
-  omzetBisnis: 60000000,
-  pengeluaranBisnis: 14200000,
-}));
+export const useWalletStore = create<WalletState>()(
+  persist(
+    (set) => ({
+      activeMode: null,
+      hasHydrated: false,
+      setActiveMode: (mode) => set({ activeMode: mode }),
+      setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
+    }),
+    {
+      name: 'financeapp-preferred-mode',
+      storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      onRehydrateStorage: (initialState) => (state) => (state ?? initialState).setHasHydrated(true),
+    },
+  ),
+);
