@@ -1,22 +1,76 @@
 # Finance App
 
-Aplikasi rekap keuangan fleksibel untuk individu maupun toko/bisnis dengan sistem multi-wallet.
+Aplikasi pencatatan keuangan pribadi dan warung berbasis Expo. Aplikasi memakai Expo SDK 57.
 
-## Menjalankan di web
+## Persiapan
 
-Pastikan Node.js versi LTS sudah terpasang, lalu jalankan dari folder proyek:
+- Node.js **22.13.0 atau lebih baru**.
+- Git.
+- Untuk menjalankan lewat Expo Go, pasang Expo Go yang mendukung SDK 57 di HP.
+- Untuk OCR struk otomatis, ikuti bagian [OCR dan development build](#ocr-dan-development-build).
+
+## Pertama kali mengambil project
 
 ```bash
-npm install
-npm run web
+git clone https://github.com/aidikonami841-debug/Harron.git
+cd Harron
+npm ci
+npx expo start -c
 ```
 
-Expo akan menampilkan alamat lokal untuk membuka aplikasi di browser. Jalankan `npm start` bila ingin membuka menu Expo dan memilih target lain.
+Scan QR dari terminal dengan Expo Go. Kalau menjalankan dari folder project yang sudah ada, pastikan terminal berada di folder repository sebelum menjalankan perintah Git:
+
+```powershell
+cd "$env:USERPROFILE\Downloads\FinanceApp"
+git rev-parse --show-toplevel
+```
+
+Perintah kedua harus menampilkan lokasi repository. Jika muncul `fatal: not a git repository`, pindah dulu ke folder project hasil `git clone`.
+
+## Mengambil update terbaru
+
+Tutup Metro/Expo yang sedang berjalan, buka terminal di folder project, lalu cek apakah ada perubahan lokal:
+
+```bash
+git status
+```
+
+Kalau tidak ada perubahan lokal, ambil update dan pasang dependency dari lockfile:
+
+```bash
+git pull --ff-only origin main
+npm ci
+npx expo start -c
+```
+
+Kalau `git status` menunjukkan perubahan yang belum disimpan, commit perubahan ke branch kerja sendiri sebelum pull. Alternatifnya, simpan sementara dengan `git stash push -u`, lakukan pull, lalu pulihkan dengan `git stash pop`. Jika Git melaporkan konflik, selesaikan konflik dulu; jangan pilih overwrite/reset karena itu bisa menghapus pekerjaan lokal.
+
+Jangan jalankan `npm install` untuk sekadar mengambil update. `npm ci` memasang persis versi dependency di `package-lock.json` dan mengganti folder `node_modules` dengan versi yang sesuai.
+
+## Menjalankan di Android/iOS
+
+Untuk mencoba fitur umum lewat Expo Go, jalankan `npx expo start -c` lalu scan QR. Build native lokal bisa dijalankan dengan:
+
+```bash
+npm run android
+npm run ios
+```
+
+Android memerlukan Android Studio dan Android SDK. iOS memerlukan macOS dan Xcode.
+
+## OCR dan development build
+
+Pemilihan/foto struk tersedia melalui Expo Image Picker. Pembacaan teks OCR memakai modul native ML Kit dan **tidak tersedia di Expo Go**. Di Expo Go, nominal dan tanggal bisa diisi manual setelah memilih foto.
+
+Untuk menggunakan OCR otomatis di Android, siapkan Android Studio/SDK, lalu jalankan:
+
+```bash
+npm ci
+npx expo run:android
+```
+
+Perubahan atau penambahan modul native memerlukan build ulang aplikasi. Membuka project dengan Expo Go saja tidak akan menambahkan modul OCR.
 
 ## Kolaborasi
 
-Clone repository, lalu jalankan `npm install`. Buat branch untuk perubahan, kemudian push branch tersebut dan ajukan pull request ke `main`.
-
-## Android dan iOS
-
-Perintah `npm run android` dan `npm run ios` menjalankan build native melalui Expo. Android memerlukan Android Studio, Android SDK, dan emulator atau perangkat terhubung; iOS memerlukan macOS dan Xcode.
+Kerjakan perubahan pada branch masing-masing, lalu push branch itu dan ajukan pull request ke `main`. Sebelum mulai mengedit, tarik update terbaru dengan langkah di atas agar tidak menimpa pekerjaan teman.
