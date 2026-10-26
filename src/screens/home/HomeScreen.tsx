@@ -1,17 +1,22 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
-import { useWalletStore, AppMode } from '../../store/useWalletStore';
-import { formatCurrency } from '../../utils/currency';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppMode, useWalletStore } from '../../store/useWalletStore';
+import { formatRupiah } from '../../utils/currency';
+
+const INK = '#202821';
+const MUTED = '#778078';
+const PAPER = '#F7F7F2';
+const LINE = '#E5E7DF';
+const GREEN = '#356B4B';
 
 export const HomeScreen = () => {
   const {
@@ -25,230 +30,159 @@ export const HomeScreen = () => {
     omzetBisnis,
     pengeluaranBisnis,
   } = useWalletStore();
+  const isBusiness = activeMode === 'bisnis';
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const horizontalPadding = Math.min(24, Math.max(16, width * 0.055));
 
-  const isBisnis = activeMode === 'bisnis';
+  const rows = isBusiness
+    ? [
+        { title: 'Penjualan hari ini', detail: 'Tunai · 10:42', amount: 1250000, kind: 'in' },
+        { title: 'Belanja stok beras', detail: 'Kulakan · 09:15', amount: -680000, kind: 'out' },
+        { title: 'Listrik toko', detail: 'Operasional · Kemarin', amount: -215000, kind: 'out' },
+      ]
+    : [
+        { title: 'Gaji bulanan', detail: 'Pekerjaan · 25 Okt', amount: 8500000, kind: 'in' },
+        { title: 'Belanja dapur', detail: 'Rumah tangga · 24 Okt', amount: -325000, kind: 'out' },
+        { title: 'Transportasi', detail: 'Perjalanan · 23 Okt', amount: -85000, kind: 'out' },
+      ];
 
-  // Dummy data transaksi sesuai gambar
-  const transaksiPribadi = [
-    { id: '1', title: 'Gaji Bulanan', date: '15 July, 2024', amount: 15000000, type: 'in', icon: 'wallet-outline' },
-    { id: '2', title: 'Belanja Bulanan', date: '1 July, 2024', amount: -1200000, type: 'out', icon: 'cart-outline' },
-    { id: '3', title: 'Kopi & Snacking', date: '2 July, 2024', amount: -350000, type: 'out', icon: 'cafe-outline' },
-  ];
-
-  const transaksiBisnis = [
-    { id: '1', title: 'Penjualan Grosir', date: '3 July, 2024', amount: 1500000, type: 'in', icon: 'cart-outline' },
-    { id: '2', title: 'Beli Stok Sembako', date: '1 July, 2024', amount: -5000000, type: 'out', icon: 'basket-outline' },
-    { id: '3', title: 'Listrik & Air Toko', date: '1 July, 2024', amount: -450000, type: 'out', icon: 'flash-outline' },
-  ];
-
-  const transactions = isBisnis ? transaksiBisnis : transaksiPribadi;
+  const chooseMode = (mode: AppMode) => setActiveMode(mode);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isBisnis ? COLORS.bisnis.headerBg : COLORS.background }]}>
-      <StatusBar barStyle={isBisnis ? 'light-content' : 'dark-content'} />
-      
-      {/* HEADER & TOGGLE MODE */}
-      <View style={[styles.headerContainer, { backgroundColor: isBisnis ? COLORS.bisnis.headerBg : COLORS.white }]}>
-        <View style={styles.topHeader}>
-          <Text style={[styles.greetingText, { color: isBisnis ? COLORS.white : COLORS.textPrimary }]}>
-            {isBisnis ? 'Toko App' : 'Hai, Kak'}
-          </Text>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={24} color={isBisnis ? COLORS.white : COLORS.textPrimary} />
-          </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={PAPER} />
+      <ScrollView
+        contentContainerStyle={[styles.page, { paddingHorizontal: horizontalPadding }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topline}>
+          <View style={styles.headingCopy}>
+            <Text style={styles.eyebrow}>CATATAN KEUANGAN</Text>
+            <Text style={styles.heading}>{isBusiness ? namaToko : 'Keuangan saya'}</Text>
+          </View>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{isBusiness ? 'W' : 'S'}</Text></View>
         </View>
 
-        {/* Mode Switcher Buttons */}
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, !isBisnis && styles.toggleActivePribadi]}
-            onPress={() => setActiveMode('pribadi')}
-          >
-            <Text style={[styles.toggleText, !isBisnis ? styles.toggleTextActiveWhite : styles.toggleTextInactive]}>
-              Keuangan Pribadi
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.toggleBtn, isBisnis && styles.toggleActiveBisnis]}
-            onPress={() => setActiveMode('bisnis')}
-          >
-            <Text style={[styles.toggleText, isBisnis ? styles.toggleTextActiveBlack : styles.toggleTextInactive]}>
-              Keuangan Bisnis
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.switcher}>
+          <ModeButton label="Pribadi" selected={!isBusiness} onPress={() => chooseMode('pribadi')} />
+          <ModeButton label="Warung" selected={isBusiness} onPress={() => chooseMode('bisnis')} />
         </View>
 
-        {isBisnis && (
-          <Text style={styles.namaTokoText}>{namaToko}</Text>
-        )}
-      </View>
-
-      <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
-        {/* CARD RINGKASAN SALDO / PENDAPATAN */}
-        <View style={styles.cardSummary}>
-          <Text style={styles.cardTitle}>
-            {isBisnis ? 'Total Pendapatan Bisnis' : 'Total Saldo Dompet Kita'}
-          </Text>
-          <Text style={styles.cardMainValue}>
-            {formatCurrency(isBisnis ? totalPendapatanBisnis : saldoPribadi)}
-          </Text>
-
-          <View style={styles.cardDivider} />
-
-          <View style={styles.cardRow}>
-            <View style={styles.cardCol}>
-              <Text style={styles.cardSubTitle}>{isBisnis ? 'Omzet' : 'Uang Masuk'}</Text>
-              <Text style={[styles.cardSubValue, { color: COLORS.textPrimary }]}>
-                {formatCurrency(isBisnis ? omzetBisnis : uangMasukPribadi)}
-              </Text>
+        <View style={styles.summary}>
+          <Text style={styles.summaryLabel}>{isBusiness ? 'SISA KAS' : 'SALDO SAAT INI'}</Text>
+          <Text style={styles.balance}>{formatRupiah(isBusiness ? totalPendapatanBisnis : saldoPribadi)}</Text>
+          <Text style={styles.period}>Ringkasan · Oktober 2026</Text>
+          <View style={styles.rule} />
+          <View style={styles.totals}>
+            <View style={styles.totalBlock}>
+              <Text style={styles.totalLabel}>{isBusiness ? 'Penjualan' : 'Pemasukan'}</Text>
+              <Text style={styles.incomeValue}>{formatRupiah(isBusiness ? omzetBisnis : uangMasukPribadi)}</Text>
             </View>
-            <View style={styles.cardCol}>
-              <Text style={styles.cardSubTitle}>{isBisnis ? 'Pengeluaran' : 'Uang Keluar'}</Text>
-              <Text style={[styles.cardSubValue, { color: COLORS.textPrimary }]}>
-                {formatCurrency(isBisnis ? pengeluaranBisnis : uangKeluarPribadi)}
-              </Text>
+            <View style={styles.totalBlock}>
+              <Text style={styles.totalLabel}>Pengeluaran</Text>
+              <Text style={styles.totalValue}>{formatRupiah(isBusiness ? pengeluaranBisnis : uangKeluarPribadi)}</Text>
             </View>
           </View>
         </View>
 
-        {/* QUICK ACTION BUTTONS */}
-        <View style={styles.quickActionGrid}>
-          {!isBisnis ? (
-            <>
-              <QuickBtn icon="arrow-up-outline" label="Catat Masuk" bg={COLORS.pastelBlue} color="#0284C7" />
-              <QuickBtn icon="arrow-down-outline" label="Catat Keluar" bg={COLORS.pastelRed} color="#E11D48" />
-              <QuickBtn icon="swap-horizontal-outline" label="Transfer" bg={COLORS.pastelCyan} color="#0891B2" />
-              <QuickBtn icon="pie-chart-outline" label="Analisis" bg={COLORS.pastelPurple} color="#9333EA" />
-            </>
-          ) : (
-            <>
-              <QuickBtn icon="storefront-outline" label="Catat Penjualan" bg={COLORS.pastelGreen} color="#059669" />
-              <QuickBtn icon="basket-outline" label="Kulakan/Stok" bg={COLORS.pastelOrange} color="#D97706" />
-              <QuickBtn icon="receipt-outline" label="Utang Piutang" bg={COLORS.pastelRose} color="#E11D48" />
-              <QuickBtn icon="bar-chart-outline" label="Laporan" bg={COLORS.pastelTeal} color="#0D9488" />
-            </>
-          )}
+        <TouchableOpacity activeOpacity={0.8} style={styles.addButton}>
+          <Text style={styles.plus}>＋</Text>
+          <Text style={styles.addText}>Catat transaksi</Text>
+        </TouchableOpacity>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Catatan terbaru</Text>
+          <TouchableOpacity><Text style={styles.seeAll}>Lihat semua</Text></TouchableOpacity>
         </View>
-
-        {/* TRANSAKSI TERAKHIR */}
-        <View style={styles.transactionSection}>
-          <Text style={styles.sectionTitle}>Transaksi Terakhir</Text>
-
-          {transactions.map((item) => (
-            <View key={item.id} style={styles.transItem}>
-              <View style={styles.transLeft}>
-                <View style={styles.transIconBg}>
-                  <Ionicons name={item.icon as any} size={20} color={isBisnis ? COLORS.bisnis.primary : COLORS.pribadi.primary} />
-                </View>
-                <View>
-                  <Text style={styles.transTitle}>{item.title}</Text>
-                  <Text style={styles.transDate}>{item.date}</Text>
-                </View>
+        <View style={styles.ledger}>
+          {rows.map((row, index) => (
+            <View key={row.title} style={[styles.row, index === rows.length - 1 && styles.lastRow]}>
+              <View style={[styles.mark, row.kind === 'in' ? styles.inMark : styles.outMark]} />
+              <View style={styles.rowCopy}>
+                <Text style={styles.rowTitle}>{row.title}</Text>
+                <Text style={styles.rowDetail}>{row.detail}</Text>
               </View>
-              <Text style={[styles.transAmount, { color: item.amount > 0 ? COLORS.income : COLORS.textPrimary }]}>
-                {item.amount > 0 ? `+${formatCurrency(item.amount)}` : `-${formatCurrency(Math.abs(item.amount))}`}
+              <Text style={[styles.amount, row.kind === 'in' ? styles.incomeValue : styles.amountOut]}>
+                {row.kind === 'in' ? '+' : '−'}{formatRupiah(Math.abs(row.amount))}
               </Text>
             </View>
           ))}
         </View>
-      </ScrollView>
 
-      {/* BOTTOM NAVIGATION BAR */}
-      <View style={styles.bottomNav}>
-        <NavItem icon="home" label="Beranda" active />
-        <NavItem icon="swap-horizontal" label="Transaksi" />
-        <NavItem icon="stats-chart" label="Laporan" />
-        <NavItem icon="settings-outline" label="Pengaturan" />
+        <Text style={styles.footer}>Rapi mencatat, tenang mengatur.</Text>
+      </ScrollView>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <NavItem label="Ringkasan" active />
+        <NavItem label="Catatan" />
+        <NavItem label="Laporan" />
+        <NavItem label="Profil" />
       </View>
     </SafeAreaView>
   );
 };
 
-// Helper Components
-const QuickBtn = ({ icon, label, bg, color }: { icon: string; label: string; bg: string; color: string }) => (
-  <TouchableOpacity style={styles.quickItem}>
-    <View style={[styles.quickIconBg, { backgroundColor: bg }]}>
-      <Ionicons name={icon as any} size={24} color={color} />
-    </View>
-    <Text style={styles.quickLabel}>{label}</Text>
+const ModeButton = ({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress} style={[styles.modeButton, selected && styles.modeSelected]}>
+    <Text style={[styles.modeText, selected && styles.modeTextSelected]}>{label}</Text>
   </TouchableOpacity>
 );
 
-const NavItem = ({ icon, label, active }: { icon: string; label: string; active?: boolean }) => (
-  <TouchableOpacity style={styles.navItem}>
-    <Ionicons name={icon as any} size={22} color={active ? COLORS.pribadi.primary : COLORS.textMuted} />
-    <Text style={[styles.navLabel, { color: active ? COLORS.pribadi.primary : COLORS.textMuted }]}>{label}</Text>
+const NavItem = ({ label, active = false }: { label: string; active?: boolean }) => (
+  <TouchableOpacity
+    accessibilityRole="button"
+    accessibilityState={{ selected: active }}
+    style={styles.navButton}
+    activeOpacity={0.7}
+  >
+    <Text style={active ? styles.navActive : styles.navItem}>{label}</Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  headerContainer: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
-  topHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greetingText: { fontSize: 22, fontWeight: 'bold' },
-  notificationBtn: { padding: 4 },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 25,
-    padding: 4,
-    marginTop: 15,
-  },
-  toggleBtn: { flex: 1, paddingVertical: 10, borderRadius: 20, alignItems: 'center' },
-  toggleActivePribadi: { backgroundColor: '#2563EB' },
-  toggleActiveBisnis: { backgroundColor: '#FFFFFF' },
-  toggleText: { fontSize: 13, fontWeight: '600' },
-  toggleTextActiveWhite: { color: '#FFFFFF' },
-  toggleTextActiveBlack: { color: '#111827' },
-  toggleTextInactive: { color: '#4B5563' },
-  namaTokoText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 12, textAlign: 'center' },
-  scrollBody: { flex: 1, backgroundColor: '#F3F4F6', paddingHorizontal: 20 },
-  cardSummary: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  cardTitle: { fontSize: 13, color: '#6B7280', marginBottom: 6 },
-  cardMainValue: { fontSize: 26, fontWeight: 'bold', color: '#111827' },
-  cardDivider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 15 },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardCol: { flex: 1 },
-  cardSubTitle: { fontSize: 12, color: '#6B7280', marginBottom: 4 },
-  cardSubValue: { fontSize: 15, fontWeight: 'bold' },
-  quickActionGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
-  quickItem: { alignItems: 'center', width: '22%' },
-  quickIconBg: { width: 54, height: 54, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  quickLabel: { fontSize: 11, textAlign: 'center', color: '#374151', fontWeight: '500' },
-  transactionSection: { marginTop: 25, marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 15 },
-  transItem: {
-    flexDirection: 'row',
-    justify: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  transLeft: { flexDirection: 'row', alignItems: 'center' },
-  transIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  transTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  transDate: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
-  transAmount: { fontSize: 14, fontWeight: 'bold' },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-  navItem: { flex: 1, alignItems: 'center' },
-  navLabel: { fontSize: 10, marginTop: 3 },
+  safeArea: { flex: 1, backgroundColor: PAPER },
+  page: { paddingTop: 14, paddingBottom: 28 },
+  topline: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 23 },
+  headingCopy: { flex: 1, minWidth: 0, paddingRight: 12 },
+  eyebrow: { color: MUTED, fontSize: 10, letterSpacing: 1.5, fontWeight: '700' },
+  heading: { color: INK, fontSize: 23, fontWeight: '700', marginTop: 5, flexShrink: 1 },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#E5E9DF', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: GREEN, fontSize: 15, fontWeight: '700' },
+  switcher: { flexDirection: 'row', backgroundColor: '#EDEEE8', padding: 4, borderRadius: 9, marginBottom: 20 },
+  modeButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 7 },
+  modeSelected: { backgroundColor: '#FFFFFF' },
+  modeText: { color: MUTED, fontSize: 13, fontWeight: '600' },
+  modeTextSelected: { color: INK },
+  summary: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: LINE, padding: 19 },
+  summaryLabel: { color: MUTED, fontSize: 10, letterSpacing: 1.2, fontWeight: '700' },
+  balance: { color: INK, fontSize: 29, fontWeight: '700', marginTop: 7 },
+  period: { color: MUTED, fontSize: 12, marginTop: 5 },
+  rule: { height: 1, backgroundColor: LINE, marginVertical: 17 },
+  totals: { flexDirection: 'row' },
+  totalBlock: { flex: 1 },
+  totalLabel: { color: MUTED, fontSize: 12, marginBottom: 6 },
+  incomeValue: { color: GREEN, fontWeight: '600', fontSize: 14 },
+  totalValue: { color: INK, fontWeight: '600', fontSize: 14 },
+  addButton: { backgroundColor: GREEN, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 9, marginTop: 14 },
+  plus: { color: '#FFFFFF', fontSize: 19, lineHeight: 20, marginRight: 7 },
+  addText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 29, marginBottom: 11 },
+  sectionTitle: { color: INK, fontSize: 17, fontWeight: '700' },
+  seeAll: { color: GREEN, fontSize: 12, fontWeight: '600' },
+  ledger: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: LINE, paddingHorizontal: 14 },
+  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: LINE },
+  lastRow: { borderBottomWidth: 0 },
+  mark: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
+  inMark: { backgroundColor: GREEN },
+  outMark: { backgroundColor: '#C88755' },
+  rowCopy: { flex: 1 },
+  rowTitle: { color: INK, fontSize: 13, fontWeight: '600' },
+  rowDetail: { color: MUTED, fontSize: 11, marginTop: 4 },
+  amount: { fontSize: 12, fontWeight: '600' },
+  amountOut: { color: INK },
+  footer: { color: '#9A9F97', fontSize: 11, textAlign: 'center', marginTop: 24 },
+  bottomBar: { minHeight: 64, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: LINE, flexDirection: 'row', alignItems: 'center', paddingTop: 6 },
+  navButton: { flex: 1, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 },
+  navActive: { color: GREEN, fontSize: 13, fontWeight: '700' },
+  navItem: { color: MUTED, fontSize: 13, fontWeight: '500' },
 });
