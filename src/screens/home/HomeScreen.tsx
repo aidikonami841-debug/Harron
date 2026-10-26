@@ -1,18 +1,18 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWalletStore } from '../../store/useWalletStore';
+import { ScaledText as Text } from '../../components/ScaledText';
 import { Transaction, useTransactionStore } from '../../store/useTransactionStore';
 import { formatRupiah } from '../../utils/currency';
 import type { MainTabParamList } from '../../navigation/MainTabs';
@@ -25,13 +25,20 @@ const GREEN = '#356B4B';
 
 export const HomeScreen = () => {
   const activeMode = useWalletStore((state) => state.activeMode);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const [transactions, setTransactions] = useState(() => useTransactionStore.getState().transactions);
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  useFocusEffect(useCallback(() => {
+    const syncTransactions = () => setTransactions(useTransactionStore.getState().transactions);
+    syncTransactions();
+    return useTransactionStore.subscribe(syncTransactions);
+  }, []));
   const mode = activeMode ?? 'pribadi';
   const isBusiness = mode === 'bisnis';
   const { width } = useWindowDimensions();
   const horizontalPadding = Math.min(24, Math.max(16, width * 0.055));
-  const modeTransactions = transactions.filter((transaction) => transaction.mode === mode);
+  const modeTransactions = transactions
+    .filter((transaction) => transaction.mode === mode)
+    .sort((first, second) => second.date.localeCompare(first.date) || second.id.localeCompare(first.id));
   const now = new Date();
   const monthTransactions = modeTransactions.filter((transaction) => {
     const date = new Date(`${transaction.date}T00:00:00`);
@@ -42,6 +49,19 @@ export const HomeScreen = () => {
   const balance = sumTransactions(modeTransactions, 'income') - sumTransactions(modeTransactions, 'expense');
   const recentTransactions = modeTransactions.slice(0, 3);
   const monthLabel = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(now);
+  const weeklyExpenses = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6 + index);
+    const dateKey = `${day.getFullYear()}-${`${day.getMonth() + 1}`.padStart(2, '0')}-${`${day.getDate()}`.padStart(2, '0')}`;
+    const amount = modeTransactions.reduce((total, transaction) =>
+      total + (transaction.type === 'expense' && transaction.date === dateKey ? transaction.amount : 0), 0);
+    return {
+      dateKey,
+      amount,
+      label: new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(day).replace('.', ''),
+    };
+  });
+  const weeklyTotal = weeklyExpenses.reduce((total, day) => total + day.amount, 0);
+  const weeklyMax = Math.max(1, ...weeklyExpenses.map((day) => day.amount));
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -70,13 +90,40 @@ export const HomeScreen = () => {
           <View style={styles.rule} />
           <View style={styles.totals}>
             <View style={styles.totalBlock}>
-              <Text style={styles.totalLabel}>{isBusiness ? 'Penjualan bulan ini' : 'Pemasukan bulan ini'}</Text>
+              <View style={styles.totalCopy}>
+                <Text style={styles.totalLabel}>{isBusiness ? 'Penjualan' : 'Pemasukan'}</Text>
+                <Text style={styles.totalHint}>Bulan ini</Text>
+              </View>
               <Text style={styles.incomeValue}>{formatRupiah(incomeThisMonth)}</Text>
             </View>
             <View style={styles.totalBlock}>
-              <Text style={styles.totalLabel}>Pengeluaran bulan ini</Text>
+              <View style={styles.totalCopy}>
+                <Text style={styles.totalLabel}>Pengeluaran</Text>
+                <Text style={styles.totalHint}>Bulan ini</Text>
+              </View>
               <Text style={styles.totalValue}>{formatRupiah(expensesThisMonth)}</Text>
             </View>
+          </View>
+        </View>
+
+        <View style={styles.chartCard}>
+          <View style={styles.chartHeader}>
+            <View style={styles.chartHeadingCopy}>
+              <Text style={styles.chartTitle}>Pengeluaran 7 hari</Text>
+              <Text style={styles.chartSubtitle}>Tren belanja mingguan</Text>
+            </View>
+            <Text style={styles.chartTotal} numberOfLines={1}>{formatRupiah(weeklyTotal)}</Text>
+          </View>
+          {weeklyTotal === 0 ? <Text style={styles.chartEmpty}>Belum ada pengeluaran minggu ini.</Text> : null}
+          <View style={styles.chartBars}>
+            {weeklyExpenses.map((day, index) => (
+              <View key={day.dateKey} style={styles.chartColumn}>
+                <View style={styles.barTrack}>
+                  <View style={[styles.bar, { height: day.amount ? Math.max(8, (day.amount / weeklyMax) * 76) : 4 }, index === 6 ? styles.todayBar : styles.pastBar]} />
+                </View>
+                <Text style={[styles.barLabel, index === 6 && styles.barLabelToday]}>{day.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -114,10 +161,10 @@ export const HomeScreen = () => {
   );
 };
 
-export const TransactionRow = ({ transaction, last = false }: { transaction: Transaction; last?: boolean }) => {
+export const TransactionRow = ({ transaction, last = false, onPress }: { transaction: Transaction; last?: boolean; onPress?: () => void }) => {
   const isIncome = transaction.type === 'income';
-  return (
-    <View style={[styles.row, last && styles.lastRow]}>
+  const content = (
+    <>
       <View style={[styles.mark, isIncome ? styles.inMark : styles.outMark]} />
       <View style={styles.rowCopy}>
         <Text style={styles.rowTitle} numberOfLines={1}>{transaction.category}</Text>
@@ -128,7 +175,15 @@ export const TransactionRow = ({ transaction, last = false }: { transaction: Tra
       <Text style={[styles.amount, isIncome ? styles.incomeValue : styles.amountOut]} numberOfLines={1}>
         {isIncome ? '+' : '−'}{formatRupiah(transaction.amount)}
       </Text>
-    </View>
+    </>
+  );
+  const rowStyle = [styles.row, last && styles.lastRow];
+  return onPress ? (
+    <TouchableOpacity accessibilityRole="button" onPress={onPress} activeOpacity={0.72} style={rowStyle}>
+      {content}
+    </TouchableOpacity>
+  ) : (
+    <View style={rowStyle}>{content}</View>
   );
 };
 
@@ -156,11 +211,28 @@ const styles = StyleSheet.create({
   balance: { color: INK, fontSize: 29, fontWeight: '700', marginTop: 7 },
   period: { color: MUTED, fontSize: 12, marginTop: 5 },
   rule: { height: 1, backgroundColor: LINE, marginVertical: 17 },
-  totals: { flexDirection: 'row' },
-  totalBlock: { flex: 1, paddingRight: 8 },
-  totalLabel: { color: MUTED, fontSize: 12, marginBottom: 6 },
-  incomeValue: { color: GREEN, fontWeight: '600', fontSize: 14 },
-  totalValue: { color: INK, fontWeight: '600', fontSize: 14 },
+  totals: { flexDirection: 'column' },
+  totalBlock: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 58, borderBottomWidth: 1, borderBottomColor: LINE },
+  totalCopy: { flex: 1, minWidth: 0 },
+  totalLabel: { color: INK, fontSize: 14, fontWeight: '600' },
+  totalHint: { color: MUTED, fontSize: 11, marginTop: 3 },
+  incomeValue: { color: GREEN, fontWeight: '700', fontSize: 15, marginLeft: 8 },
+  totalValue: { color: INK, fontWeight: '700', fontSize: 15, marginLeft: 8 },
+  chartCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: LINE, padding: 16, marginTop: 14 },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  chartHeadingCopy: { flex: 1, minWidth: 0 },
+  chartTitle: { color: INK, fontSize: 15, fontWeight: '700' },
+  chartSubtitle: { color: MUTED, fontSize: 11, marginTop: 3 },
+  chartTotal: { color: GREEN, fontSize: 13, fontWeight: '700', maxWidth: '48%' },
+  chartEmpty: { color: MUTED, fontSize: 12, marginTop: 14 },
+  chartBars: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 16 },
+  chartColumn: { flex: 1, alignItems: 'center', minWidth: 0 },
+  barTrack: { height: 82, width: '100%', alignItems: 'center', justifyContent: 'flex-end', borderBottomWidth: 1, borderBottomColor: LINE },
+  bar: { width: 15, maxWidth: '65%', borderTopLeftRadius: 5, borderTopRightRadius: 5 },
+  pastBar: { backgroundColor: '#BDCEB9' },
+  todayBar: { backgroundColor: GREEN },
+  barLabel: { color: MUTED, fontSize: 10, marginTop: 7 },
+  barLabelToday: { color: GREEN, fontWeight: '700' },
   addButton: { backgroundColor: GREEN, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 9, marginTop: 14 },
   plus: { color: '#FFFFFF', fontSize: 19, lineHeight: 20, marginRight: 7 },
   addText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },

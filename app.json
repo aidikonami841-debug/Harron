@@ -4,6 +4,32 @@
     "slug": "financeapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light"
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4",
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "expo-mlkit-ocr",
+        {
+          "iosEngine": "auto"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FinanceApp membutuhkan akses foto untuk membaca struk belanja.",
+          "cameraPermission": "FinanceApp membutuhkan kamera untuk memotret struk belanja.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

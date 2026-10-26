@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StatusBar, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Animated, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppMode, useWalletStore } from '../../store/useWalletStore';
+import { ScaledText as Text } from '../../components/ScaledText';
 
 const GREEN = '#356B4B';
 const INK = '#202821';
@@ -33,13 +34,14 @@ export const ChooseModeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={PAPER} />
-      <Animated.View
-        style={[
-          styles.content,
-          { opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
-          compact && styles.contentCompact,
-        ]}
-      >
+      <ScrollView contentContainerStyle={styles.setupScroll} showsVerticalScrollIndicator={false}>
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
+            compact && styles.contentCompact,
+          ]}
+        >
         <View style={styles.brandMark}><Ionicons name="wallet-outline" size={26} color={GREEN} /></View>
         <Text style={styles.eyebrow}>SELAMAT DATANG DI DOMPET KITA</Text>
         <Text style={styles.title}>Mulai dari mana?</Text>
@@ -77,7 +79,8 @@ export const ChooseModeScreen = () => {
         </TouchableOpacity>
 
         <Text style={styles.switchHint}>Kamu bisa mengganti mode kapan saja dari Profil.</Text>
-      </Animated.View>
+        </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -117,7 +120,8 @@ const ModeCard = ({
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: PAPER },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28 },
+  setupScroll: { flexGrow: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28 },
   contentCompact: { paddingHorizontal: 18 },
   brandMark: { width: 48, height: 48, borderRadius: 15, backgroundColor: '#E6ECE3', justifyContent: 'center', alignItems: 'center', marginBottom: 28 },
   eyebrow: { color: MUTED, fontSize: 10, letterSpacing: 1.3, fontWeight: '700' },

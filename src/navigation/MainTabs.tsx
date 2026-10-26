@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { ComponentProps } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -12,11 +12,12 @@ import { AddTransactionScreen } from '../screens/transactions/AddTransactionScre
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ChooseModeScreen } from '../screens/setup/ChooseModeScreen';
 import { useWalletStore } from '../store/useWalletStore';
+import { ScaledText as Text } from '../components/ScaledText';
 
 export type MainTabParamList = {
   Beranda: undefined;
   Catatan: undefined;
-  Tambah: undefined;
+  Tambah: { transactionId?: string } | undefined;
   Profil: undefined;
 };
 
@@ -34,11 +35,6 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainTabs = () => {
   const activeMode = useWalletStore((state) => state.activeMode);
-  const hasHydrated = useWalletStore((state) => state.hasHydrated);
-
-  if (!hasHydrated) {
-    return <View style={styles.loading}><ActivityIndicator color="#356B4B" size="large" /></View>;
-  }
   if (!activeMode) return <ChooseModeScreen />;
 
   return (
@@ -112,7 +108,6 @@ const AnimatedTabBar = ({ state, descriptors, navigation, insets }: BottomTabBar
 };
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#F7F7F2', justifyContent: 'center', alignItems: 'center' },
   tabBar: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E5E7DF', paddingTop: 5, paddingHorizontal: 4 },
   activePill: { position: 'absolute', top: 5, bottom: 4, left: 0, borderRadius: 13, backgroundColor: '#EDF3EB' },
   tabButton: { flex: 1, minWidth: 0, minHeight: 54, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 1 },
